@@ -107,7 +107,7 @@ LOCK_BACKUP: {LOCK_BACKUP}
 # DATABASE - This option is to inform which database you going to use.
 #            DEFAULT: sqlite3:///etc/zmbackup/zmbackup.database
 
-DATABASE: sqlite3:///etc/zmbackup/zmbackup.database
+DATABASE: sqlite:////etc/zmbackup/zmbackup.database
 
 # BACKUP_INACTIVE_ACCOUNTS - Enable this option to Zmbackup backup disabled accounts too.
 #                            DEFAULT: true
