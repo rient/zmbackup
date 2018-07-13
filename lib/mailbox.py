@@ -2,7 +2,7 @@
 
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, sessionmaker
 from datetime import datetime
 from yaml import load
 
@@ -17,6 +17,7 @@ with open("/etc/zmbackup/zmbackup.yml","r") as fp:
 # Loading the database
 engine = create_engine(config['DATABASE'])
 Base = declarative_base()
+Session = sessionmaker(bind=engine)
 
 # Creating the tables - all of them should start with zm in their names
 
@@ -52,10 +53,10 @@ class Users(Base):
     _id = Column(Integer,primary_key=True, autoincrement=True)
     zm_session_id = Column(String(15),ForeignKey("zm_session._id"))
     email = Column(String(200),nullable=False)
-    size = Column(Integer,nullable=False,default=0)
+    size = Column(Integer,default=0)
     initial_date = Column(DateTime, default=datetime.now())
     conclusion_date = Column(DateTime)
-    status = Column(String(10),nullable=False,default="Scheduled")
+    status = Column(String(10),default="Scheduled")
 
     # Relationship to easy return the Session info from user if needed
     zm_session = relationship("Sessions")
