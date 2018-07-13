@@ -18,6 +18,7 @@ with open("/etc/zmbackup/zmbackup.yml","r") as fp:
 engine = create_engine(config['DATABASE'])
 Base = declarative_base()
 Session = sessionmaker(bind=engine)
+session = Session()
 
 # Creating the tables - all of them should start with zm in their names
 
@@ -60,3 +61,16 @@ class Users(Base):
 
     # Relationship to easy return the Session info from user if needed
     zm_session = relationship("Sessions")
+
+    @staticmethod
+    def create(**kwargs):
+        user = Users(zm_session_id=kwargs['sessionID'],email=kwargs['email'])
+        session.add(user)
+        session.commit()
+        return user
+
+    @staticmethod
+    def find(**kwargs):
+        user = session.query(Users).filter(User.zm_session_id == kwargs['sessionID'],
+                                           User.email == kwargs['email'])
+        return user
