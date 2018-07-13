@@ -31,13 +31,21 @@ class Account(object):
         if inc == True:
             pass
         rst = get(self.url,stream=True,auth=(conf['ADMINUSER'],conf['ADMINPASS']))
-        with open(self.folder + self.db.email + '.tgz','wb') as stream:
-            for block in rst.iter_content(1024):
-                stream.write(block)
+        if rst.status_code >= 200 and rst.status_code < 300:
+            with open(self.folder + self.db.email + '.tgz','wb') as stream:
+                for block in rst.iter_content(1024):
+                    stream.write(block)
+            return True
+        else:
+            return False
 
     def uploadMailbox(self):
-        files = {'upload_file':open(self.folder + self.db.email)}
-        rst = post()
+        with open(self.folder + self.db.email + '.tgz','rb') as stream:
+            rst = requests.post(self.url,files={self.db.email + '.tgz':stream})
+        if rst.status_code >= 200 and rst.status_code < 300:
+            return True
+        else:
+            return False
 
     def downloadLdap(self):
         pass
