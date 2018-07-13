@@ -41,7 +41,7 @@ class LDAPConnection(object):
 
 class Account(LDAPConnection):
 
-    objectClass = []
+    objectClass = ['zimbraAccount']
     cn = ""
 
     def __init__(self):
