@@ -1,17 +1,16 @@
 #!/usr/bin/python3
 
 from requests import get,post
-from yaml import load
-from mailbox import Users
 from sys import exit
 
-# Loading the configuration
-with open("/etc/zmbackup/zmbackup.yml","r") as fp:
-    try:
-        config = load(fp)
-    except yaml.YAMLError as e:
-        print("An error ocurred while trying to load the config files")
-        print(e)
+# Importing the User Database
+from mailbox import Users
+
+# Importing the Connection with LDAP
+from ldap import Account
+
+# Importing the Config Files
+from config import config
 
 # This one is to interact with Zimbra's API
 class Account(object):

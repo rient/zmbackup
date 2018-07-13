@@ -4,15 +4,9 @@ from sqlalchemy import create_engine, Column, Integer, String, DateTime, Foreign
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
 from datetime import datetime
-from yaml import load
 
-# Loading the configuration
-with open("/etc/zmbackup/zmbackup.yml","r") as fp:
-    try:
-        config = load(fp)
-    except yaml.YAMLError as e:
-        print("An error ocurred while trying to load the config files")
-        print(e)
+# Importing the Config Files
+from config import config
 
 # Loading the database
 engine = create_engine(config['DATABASE'])
