@@ -10,21 +10,24 @@
 #        DLOBJECT - Distribution List;
 #        ACOBJECT - User Account;
 #        ALOBJECT - Alias;
+#        SIOBJECT - Signature;
 #    $2 - The filter used by LDAP to search for a type of object. Valid values:
 #        DLFILTER - Distribution List (Use together with DLOBJECT);
 #        ACFILTER - User Account (Use together with ACOBJECT);
 #        ALFILTER - Alias (Use together with ALOBJECT).
+#        SOFILTER - Signature (Use together with SIOBJECT).
 #    $3 - Enable backup per domain
 #    $4 - The list of domains to be backed up
 ################################################################################
 function build_listBKP()
 {
   if [ "$3" == "-d" ]; then
-    for i in $(echo "$4" | sed 's/,/\n/g'); do
+    for i in ${4//s/\n/g}; do
       DC=",dc="
       DOMAIN="dc="${i//./$DC}
-      ERR=$((ldapsearch -x -H $LDAPSERVER -D $LDAPADMIN -w $LDAPPASS -b $DOMAIN -LLL "$1" $2 >> $TEMPACCOUNT) 2>&1)
-      if [[ $? -eq 0 ]]; then
+      ERR=$( (ldapsearch -Z -x -H "$LDAPSERVER" -D "$LDAPADMIN" -w "$LDAPPASS" -b "$DOMAIN" -LLL "$1" "$2" >> "$TEMPACCOUNT") 2>&1)
+      BASHERRCODE=$?
+      if [[ $BASHERRCODE -eq 0 ]]; then
         echo "Domain $i found! - Inserting inside the backup queue."
         logger -i -p local7.info "Domain $i found! - Inserting inside the backup queue."
       else
@@ -35,16 +38,17 @@ function build_listBKP()
       fi
     done
   else
-    ERR=$((ldapsearch -x -H $LDAPSERVER -D $LDAPADMIN -w $LDAPPASS -b '' -LLL "$1" $2 >> $TEMPACCOUNT) 2>&1)
-    if [[ $? -ne 0 ]]; then
+    ERR=$( (ldapsearch -Z -x -H "$LDAPSERVER" -D "$LDAPADMIN" -w "$LDAPPASS" -b '' -LLL "$1" "$2" >> "$TEMPACCOUNT") 2>&1)
+    BASHERRCODE=$?
+    if [[ $BASHERRCODE -ne 0 ]]; then
       logger -i -p local7.err "Zmbackup: LDAP - Can't extract accounts from LDAP - Error below:"
       logger -i -p local7.err "Zmbackup: $ERR"
       echo "ERROR - Can't extract accounts from LDAP - See log for more information"
     fi
   fi
-  cat $TEMPACCOUNT | grep "^$2" | awk '{print $2}' > $TEMPINACCOUNT
-  truncate --size 0 $TEMPACCOUNT
-  cat $TEMPINACCOUNT | parallel --jobs $MAX_PARALLEL_PROCESS 'ldap_filter {}'
+  grep "^$2" "$TEMPACCOUNT" | awk '{print $2}' > "$TEMPINACCOUNT"
+  truncate --size 0 "$TEMPACCOUNT"
+  parallel --jobs "$MAX_PARALLEL_PROCESS" "ldap_filter '{}'" < "$TEMPINACCOUNT"
 }
 
 
@@ -57,14 +61,14 @@ function build_listBKP()
 function build_listRST()
 {
   if [[ $2 == *"@"* ]]; then
-    for i in $(echo "$2" | sed 's/,/\n/g'); do
-      echo $i >> $TEMPACCOUNT
+    for i in ${2//s/\n/g}; do
+      echo "$i" >> "$TEMPACCOUNT"
     done
   else
     if [[ $SESSION_TYPE == 'TXT' ]]; then
-      grep "$1:" $WORKDIR/sessions.txt | grep -v "SESSION" | cut -d: -f2 > $TEMPACCOUNT
+      grep "$1:" "$WORKDIR"/sessions.txt | grep -v "SESSION" | cut -d: -f2 > "$TEMPACCOUNT"
     elif [[ $SESSION_TYPE == "SQLITE3" ]]; then
-      sqlite3 $WORKDIR/sessions.sqlite3 "select email from backup_account where sessionID='$1'" > $TEMPACCOUNT
+      sqlite3 "$WORKDIR"/sessions.sqlite3 "select email from backup_account where sessionID='$1'" > "$TEMPACCOUNT"
     fi
   fi
 }

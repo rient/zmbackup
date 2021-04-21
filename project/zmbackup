@@ -3,7 +3,7 @@
 # zmbackup - Bash script to hot backup and hot restore Zimbra Collaboration
 #            Suite Opensource
 #
-# Copyright (C) 2017 Lucas Costa Beyeler <lucas.costab@outlook.com>
+# Copyright (C) 2021 Lucas Costa Beyeler <lucas.costab@outlook.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of version 2 of the GNU General Public
@@ -36,9 +36,8 @@
 ################################################################################
 # zmbackup:
 #
-# 28/09/2018 - Version 1.2.3  - By The Zimbra Community & Lucas Costa Beyeler
+# 06/02/2021 - Version 1.2.6  - By The Zimbra Community & Lucas Costa Beyeler
 #                               <lucas.costab@outlook.com>
-#                               <zmbackup@protonmail.com>
 ################################################################################
 # parallel:
 #
@@ -72,43 +71,49 @@ case "$1" in
     checkpid
     case "$2" in
       "-dl"|"--distributionlist" )
-        sessionvars $2
+        sessionvars "$2"
         create_temp
-        backup_main $DLOBJECT $DLFILTER $3 $4
-        rm -rf $PID
+        backup_main "$DLOBJECT" "$DLFILTER" "$3" "$4"
+        rm -rf "$PID"
       ;;
       "-al"|"--alias" )
-        sessionvars $2
+        sessionvars "$2"
         create_temp
-        backup_main $ALOBJECT $ALFILTER $3 $4
-        rm -rf $PID
+        backup_main "$ALOBJECT" "$ALFILTER" "$3" "$4"
+        rm -rf "$PID"
       ;;
       "-ldp"|"--ldap" )
-        sessionvars $2
+        sessionvars "$2"
         create_temp
-        backup_main $ACOBJECT $ACFILTER $3 $4
-        rm -rf $PID
+        backup_main "$ACOBJECT" "$ACFILTER" "$3" "$4"
+        rm -rf "$PID"
       ;;
       "-m"|"--mail" )
-        sessionvars $2
+        sessionvars "$2"
         create_temp
-        backup_main $ACOBJECT $ACFILTER $3 $4
-        rm -rf $PID
+        backup_main "$ACOBJECT" "$ACFILTER" "$3" "$4"
+        rm -rf "$PID"
+      ;;
+      "-sig"|"--signature" )
+        sessionvars "$2"
+        create_temp
+        backup_main "$SIOBJECT" "$SIFILTER" "$3" "$4"
+        rm -rf "$PID"
       ;;
       * )
-        sessionvars $1
+        sessionvars "$1"
         create_temp
-        backup_main $ACOBJECT $ACFILTER $2 $3
-        rm -rf $PID
+        backup_main "$ACOBJECT" "$ACFILTER" "$2" "$3"
+        rm -rf "$PID"
       ;;
     esac
   ;;
   "-i"|"--incremental" )
-    sessionvars $1 'TRUE'
+    sessionvars "$1" 'TRUE'
     checkpid
     create_temp
-    backup_main $ACOBJECT $ACFILTER $2 $3
-    rm -rf $PID
+    backup_main "$ACOBJECT" "$ACFILTER" "$2" "$3"
+    rm -rf "$PID"
   ;;
   "-l"|"--list" )
     list_sessions
@@ -117,13 +122,20 @@ case "$1" in
     create_temp
     checkpid
     case "$2" in
-      "-dl"|"--distributionlist"|"-ldp"|"--ldap"|"-al"|"--alias")
-        restore_main_ldap $3 $4 $5
-        rm -rf $PID
+      "-dl"|"--distributionlist"|"-ldp"|"--ldap"|"-al"|"--alias"|"-sig"|"--signature")
+        case "$3" in
+          "-a"|"--account"|"-d"|"--domain")
+            restore_main_ldap "$4" "$5"
+          ;;
+          * )
+            restore_main_ldap "$3" "$4"
+          ;;
+        esac
+        rm -rf "$PID"
       ;;
       "-m"|"--mail" )
-        restore_main_mailbox $3 $4 $5
-        rm -rf $PID
+        restore_main_mailbox "$3" "$4" "$5"
+        rm -rf "$PID"
       ;;
       "-ro"|"--restoreOnAccount" )
         if [ -z "$4" ] || [ -z "$5" ]; then
@@ -132,16 +144,16 @@ case "$1" in
           exit 2
         else
           constant
-          restore_main_mailbox $3 $4 $5
-          rm -rf $PID
+          restore_main_mailbox "$3" "$4" "$5"
+          rm -rf "$PID"
         fi
       ;;
       * )
         if [[ "$2" == "full"* || "$2" == "inc"* ]]; then
           constant
-          restore_main_ldap $2 $3 $4
-          restore_main_mailbox $2 $3 $4
-          rm -rf $PID
+          restore_main_ldap "$2" "$3" "$4"
+          restore_main_mailbox "$2" "$3" "$4"
+          rm -rf "$PID"
         else
           show_help
           printf "\n\nError! Invalid parameters for restore\n"
@@ -155,22 +167,22 @@ case "$1" in
       printf "\n\nError! Please inform the session that should be deleted\n\n"
     else
       checkpid
-      delete_one $2
-      rm -rf $PID
+      delete_one "$2"
+      rm -rf "$PID"
     fi
   ;;
   "-hp"|"--housekeep")
     checkpid
     delete_old
     clean_empty
-    rm -rf $PID
+    rm -rf "$PID"
   ;;
   "-t"|"--truncate")
-    if [ ! -z "$2" ] && [ "--force-clean" == "$2" ]; then
+    if [ -n "$2" ] && [ "--force-clean" == "$2" ]; then
       checkpid
       leeroy_jenkins
       clean_empty
-      rm -rf $PID
+      rm -rf "$PID"
     else
       echo "This action is irreversible - Use the option --force-clean to override this message"
     fi
@@ -179,12 +191,12 @@ case "$1" in
     show_help
   ;;
   "-v"|"--version" )
-    echo "zmbackup version: 1.2.3"
+    echo "zmbackup version: 1.2.6"
   ;;
   "-m"|"--migrate" )
     checkpid
     migration
-    rm -rf $PID
+    rm -rf "$PID"
   ;;
   * )
     show_help
